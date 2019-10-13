@@ -22,6 +22,12 @@ class Thing:
     def get_connected_channels(self):
         return self._channels
 
+    def get_name(self):
+        return self._name
+
+    def get_key(self):
+        return self._key
+
 
     #TODO make method for sending messages via mqtt
 

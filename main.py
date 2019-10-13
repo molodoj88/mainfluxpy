@@ -2,6 +2,7 @@ from settings import *
 import requests
 from channel import Channel
 from thing import Thing
+from dbreader import DBReader
 
 
 def get_token():
@@ -28,7 +29,6 @@ def get_channels(token):
         return
     return channels
 
-
 def main():
     token = get_token()
     if token:
@@ -45,6 +45,7 @@ def main():
                 for t in things:
                     print(t.get_connected_channels())
 
+        reader = DBReader(token)
 
 if __name__ == "__main__":
     main()
