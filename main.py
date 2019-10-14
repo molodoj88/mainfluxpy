@@ -44,6 +44,7 @@ def main():
                 things = [Thing(_id, _name, _key, token) for _id, _name, _key in things_params]
                 for t in things:
                     print(t.get_connected_channels())
+                    t.send_message("some message", channel.get_id())
 
 
 if __name__ == "__main__":

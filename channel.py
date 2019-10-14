@@ -20,3 +20,6 @@ class Channel:
 
     def get_things(self):
         return self._things
+
+    def get_id(self):
+        return self._id
