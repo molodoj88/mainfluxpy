@@ -59,7 +59,7 @@ class Message:
     def get_name(self):
         if self._b_name:
             if self._name:
-                return str(self._b_name) + '/' + str(self._name)
+                return str(self._b_name) + ':' + str(self._name)
             else:
                 return str(self._b_name)
         elif self._name:
@@ -109,3 +109,13 @@ class Message:
 
     def get_update_time(self):
         return self._upd_time
+
+    def get_json(self):
+        template_json = {'channel':self._channel, 'publisher':self._publisher,
+                'protocol':self._protocol, 'bn':self._b_name, 'bt':self._b_time,
+                'bu':self._b_unit, 'bv':self._b_value, 'bs':self._b_sum,
+                'bver':self._b_ver, 'n':self._name, 'u':self._unit,
+                'v':self._value, 'vs':self._str_value, 'vb':self._bool_value,
+                'vd':self._data_value, 's':self._sum, 't':self._time, 'ut':self._upd_time}
+        json = {k:v for k, v in template_json.items() if template_json[k]}
+        return json
