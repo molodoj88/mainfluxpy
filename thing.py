@@ -31,6 +31,9 @@ class Thing:
     def get_key(self):
         return self._key
 
+    def get_id(self):
+        return self._id
+
     def set_up_mqtt_client(self):
         print("Setting up mqtt client for thing {}".format(self._name))
         def on_connect(client, userdata, flags, rc):

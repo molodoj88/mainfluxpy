@@ -3,6 +3,8 @@ import requests
 from channel import Channel
 from thing import Thing
 from dbreader import DBReader
+from message import Message, RandomMessage
+from random import randint
 
 
 def get_token():
@@ -43,10 +45,10 @@ def main():
                 things_params = [(t["id"], t["name"], t["key"]) for t in _things]
                 things = [Thing(_id, _name, _key, token) for _id, _name, _key in things_params]
                 for t in things:
-                    print(t.get_connected_channels())
-                    t.send_message("some message", channel.get_id())
+                    message = RandomMessage(name=t.get_name())
+                    print(message.get_json())
+                    t.send_message(message.get_json(), channel.get_id())
 
-        reader = DBReader(token)
 
 if __name__ == "__main__":
     main()

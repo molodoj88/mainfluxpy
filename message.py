@@ -1,4 +1,6 @@
-
+import json
+from datetime import datetime
+from random import randint
 
 #           +---------------+-------+---------+
 #           |          Name | label | Type    |
@@ -109,3 +111,22 @@ class Message:
 
     def get_update_time(self):
         return self._upd_time
+
+    def get_json(self):
+        message = [
+            {
+                "bt": int(datetime.now().timestamp()),
+                "n": self._name,
+                "u": self._unit,
+                "v": self._value
+            }
+        ]
+
+        return json.dumps(message)
+
+
+class RandomMessage(Message):
+    def __init__(self, name):
+        super().__init__(0, 0, "mqtt", name=name)
+        self._value = randint(0, 1000)
+        self._unit = chr(randint(65, 90))
