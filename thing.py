@@ -35,7 +35,7 @@ class Thing:
         return self._id
 
     def set_up_mqtt_client(self):
-        print("Setting up mqtt client for thing {}".format(self._name))
+        print("Setting up mqtt client for thing {}".format(self._id))
         def on_connect(client, userdata, flags, rc):
             print("Connected to mainflux mqtt broker with result code " + str(rc))
         self.mqtt_client.on_connect = on_connect
