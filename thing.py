@@ -20,7 +20,7 @@ class Thing:
         params = {"offset": offset, "limit": limit}
         response = requests.get(url, headers=headers, params=params)
         if response.status_code == 200:
-            self._channels.extend(response.json()["channels"])
+            self._channels = response.json()["channels"]
 
     def get_connected_channels(self):
         return self._channels
@@ -49,8 +49,8 @@ class Thing:
         topic = "channels/{}/messages".format(channel_id)
         self.mqtt_client.publish(topic, message)
 
-    @classmethod
-    def create_mainflux_thing(cls, token, thing_name):
+    @staticmethod
+    def create_thing(token, thing_name):
         url = "{}/things".format(MAINFLUX_URL)
         headers = {"Authorization": token}
         params = {"name": thing_name}
@@ -58,10 +58,19 @@ class Thing:
         if response.status_code == 201:
             return response.headers["Location"].split('/')[-1]
 
-    @classmethod
-    def remove_mainflux_thing(cls, token, thing_id):
+    @staticmethod
+    def remove_thing(token, thing_id):
         url = "{}/things/{}".format(MAINFLUX_URL, thing_id)
         headers = {"Authorization": token}
         response = requests.delete(url, headers=headers)
         if response.status_code == 204:
+            return True
+
+    def connect_to_channel(self, channel_id):
+        url = "{}/channels/{}/things/{}".format(MAINFLUX_URL, channel_id, self._id)
+        headers = {"Authorization": self._token}
+        response = requests.put(url, headers=headers)
+        print(response)
+        if response.status_code == 200:
+            self._get_connected_channels()
             return True
