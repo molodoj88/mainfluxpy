@@ -26,3 +26,20 @@ class Channel:
 
     def get_id(self):
         return self._id
+
+    @classmethod
+    def create_mainflux_channel(cls, token, channel_name):
+        url = "{}/channels".format(MAINFLUX_URL)
+        headers = {"Authorization": token}
+        params = {"name": channel_name}
+        response = requests.post(url, headers=headers, json=params)
+        if response.status_code == 201:
+            return response.headers["Location"].split('/')[-1]
+
+    @classmethod
+    def remove_mainflux_channel(cls, token, channel_id):
+        url = "{}/channels/{}".format(MAINFLUX_URL, channel_id)
+        headers = {"Authorization": token}
+        response = requests.delete(url, headers=headers)
+        if response.status_code == 204:
+            return True

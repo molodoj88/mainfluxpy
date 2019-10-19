@@ -48,3 +48,20 @@ class Thing:
     def send_message(self, message, channel_id):
         topic = "channels/{}/messages".format(channel_id)
         self.mqtt_client.publish(topic, message)
+
+    @classmethod
+    def create_mainflux_thing(cls, token, thing_name):
+        url = "{}/things".format(MAINFLUX_URL)
+        headers = {"Authorization": token}
+        params = {"name": thing_name}
+        response = requests.post(url, headers=headers, json=params)
+        if response.status_code == 201:
+            return response.headers["Location"].split('/')[-1]
+
+    @classmethod
+    def remove_mainflux_thing(cls, token, thing_id):
+        url = "{}/things/{}".format(MAINFLUX_URL, thing_id)
+        headers = {"Authorization": token}
+        response = requests.delete(url, headers=headers)
+        if response.status_code == 204:
+            return True
