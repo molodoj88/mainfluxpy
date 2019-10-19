@@ -28,9 +28,6 @@ class DBReader:
         self._get_channels()
         self._get_things()
         self._get_all_messages(limit=5)
-        pprint(self._messages)
-        pprint(self._channels)
-        pprint(self._things)
 
     def _get_channels(self, offset=0, limit=100):
         url = "{}/channels".format(MAINFLUX_URL)
@@ -71,16 +68,97 @@ class DBReader:
             self._messages.append({"channel":self._things[ch]['channel'], "things":{}})
             for th in self._things[ch]['things']:
                 th_name = th.get_name()
-                print(th_name)
                 th_key = th.get_key()
                 self._messages[-1]['things'][th_name] = {"thing":th, "messages":[]}
                 th_offset = offset
                 msgs = self._get_messages(ch_id, th_key, offset=th_offset, limit=limit)
-                self._messages[-1]['things'][th_name]['messages'].extend(msgs['messages'])
+                self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
                 total_msgs = msgs['total']
                 th_offset += limit
                 while th_offset < total_msgs:
                     msgs = self._get_messages(ch_id, th_key, offset=th_offset, limit=limit)
-                    self._messages[-1]['things'][th_name]['messages'].extend(msgs['messages'])
+                    self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
                     th_offset += limit
         pass
+
+    def _parse_message(self, msg):
+        if type(msg) is dict:
+            name=None
+            unit=None
+            value=None
+            sum=None
+            time=0
+            if 'channel' in msg:
+                channel = msg['channel']
+            if 'protocol' in msg:
+                protocol = msg['protocol']
+            if 'publisher' in msg:
+                publisher = msg['publisher']
+            if 'name' in msg:
+                name = msg['name']
+            if 'unit' in msg:
+                unit = msg['unit']
+            if 'value' in msg:
+                value = msg['value']
+            if 'sum' in msg:
+                sum = msg['sum']
+            if 'time' in msg:
+                time = msg['time']
+            return Message(channel, publisher, protocol, name=name, unit=unit,
+                            value=value, sum=sum, time=time)
+        if type(msg) is list:
+            msg_list = []
+            for entry in msg:
+                msg_list.append(self._parse_message(entry))
+            return msg_list
+        return
+
+    def get_channels(self):
+        return self._channels
+
+    def get_things(self):
+        return self._things
+
+    def get_messages(self):
+        return self._messages
+
+    def get_thing_messages(self, thing):
+        th_key = thing.get_key()
+        connected_channels = thing.get_connected_channels()
+        thing_messages = {}
+        if connected_channels:
+            for ch in connected_channels:
+                ch_id = ch['id']# ch_id = ch.get_id()
+                ch_name = ch['name']#ch_name = ch.get_name()
+                resp = self._get_messages(ch_id, th_key)
+                total_msgs = resp['total']
+                th_msg = resp['messages']
+                if total_msgs > 10:
+                    th_msg += self._get_messages(ch_id, th_key, offset=10, limit=total_msgs)['messages']
+                thing_messages[ch_name] = th_msg
+        return thing_messages
+
+    def get_channel_messages(self, channel):
+        ch_id = channel.get_id()
+        connected_things = channel.get_things()
+        channel_messages = []
+        if connected_things:
+            th_key = connected_things[0]['key'] #th_key = connected_things[0].get_key()
+            resp = self._get_messages(ch_id, th_key)
+            total_msgs = resp['total']
+            channel_messages = resp['messages']
+            if total_msgs > 10:
+                channel_messages += self._get_messages(ch_id, th_key, offset=10, limit=total_msgs)['messages']
+        return channel_messages
+
+    def get_thing_summary(self, thing):
+        msgs = self.get_thing_messages(thing)
+        msg_count = []
+        for item in msgs:
+            msg_count.append(len(msgs[item]))
+        return {'channels':len(msgs), 'messages':msg_count, 'total messages':sum(msg_count)}
+
+    def get_channel_summary(self, channel):
+        msgs = self.get_channel_messages(channel)
+        connected_things = channel.get_things()
+        return {'things':len(connected_things), 'total messages':len(msgs)}

@@ -61,7 +61,7 @@ class Message:
     def get_name(self):
         if self._b_name:
             if self._name:
-                return str(self._b_name) + '/' + str(self._name)
+                return str(self._b_name) + ':' + str(self._name)
             else:
                 return str(self._b_name)
         elif self._name:
@@ -129,4 +129,5 @@ class RandomMessage(Message):
     def __init__(self, name):
         super().__init__(0, 0, "mqtt", name=name)
         self._value = randint(0, 1000)
+        # Random letter from A to Z
         self._unit = chr(randint(65, 90))
