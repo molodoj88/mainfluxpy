@@ -34,15 +34,15 @@ def _test(_things, event):
 
 if __name__ == "__main__":
     token = get_token()
-    things = []
     all_processes = []
     if token:
         _things = get_all_things(token)
-        things = [Thing(t["id"], t["name"], t["key"], token) for t in _things]
-        if things:
+        for t in _things:
+            Thing(t["id"], t["name"], t["key"], token)
+        if Thing.things:
             queue = Queue()
             stop_event = threading.Event()
-            for t in things:
+            for t in Thing.things:
                 queue.put(t)
             while True:
                 try:
@@ -58,6 +58,6 @@ if __name__ == "__main__":
                 proc.join()
 
             reader = DBReader(token)
-            for t in things:
+            for t in Thing.things:
                 if t.get_connected_channels():
                     print(reader.get_thing_summary(t))
