@@ -72,12 +72,14 @@ class DBReader:
                 self._messages[-1]['things'][th_name] = {"thing":th, "messages":[]}
                 th_offset = offset
                 msgs = self._get_messages(ch_id, th_key, offset=th_offset, limit=limit)
-                self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
+                if msgs['messages']:
+                    self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
                 total_msgs = msgs['total']
                 th_offset += limit
                 while th_offset < total_msgs:
                     msgs = self._get_messages(ch_id, th_key, offset=th_offset, limit=limit)
-                    self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
+                    if msgs['messages']:
+                        self._messages[-1]['things'][th_name]['messages'].extend(self._parse_message(msgs['messages']))
                     th_offset += limit
         pass
 
@@ -155,7 +157,8 @@ class DBReader:
         msgs = self.get_thing_messages(thing)
         msg_count = []
         for item in msgs:
-            msg_count.append(len(msgs[item]))
+            if msgs[item]:
+                msg_count.append(len(msgs[item]))
         return {'channels':len(msgs), 'messages':msg_count, 'total messages':sum(msg_count)}
 
     def get_channel_summary(self, channel):
