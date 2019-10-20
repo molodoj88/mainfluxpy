@@ -5,6 +5,7 @@ from random import choice, random
 from main import get_all_things, get_token
 from queue import Queue
 from time import sleep
+from dbreader import DBReader
 
 
 MESSAGES_BY_THING = 10
@@ -34,19 +35,29 @@ def _test(_things, event):
 if __name__ == "__main__":
     token = get_token()
     things = []
+    all_processes = []
     if token:
         _things = get_all_things(token)
         things = [Thing(t["id"], t["name"], t["key"], token) for t in _things]
-    if things:
-        queue = Queue()
-        stop_event = threading.Event()
-        for t in things:
-            queue.put(t)
-        while True:
-            try:
-                if stop_event.is_set():
+        if things:
+            queue = Queue()
+            stop_event = threading.Event()
+            for t in things:
+                queue.put(t)
+            while True:
+                try:
+                    if stop_event.is_set():
+                        break
+                    process = threading.Thread(target=_test, args=(queue, stop_event))
+                    all_processes.append(process)
+                    process.start()
+                except KeyboardInterrupt:
                     break
-                process = threading.Thread(target=_test, args=(queue, stop_event))
-                process.start()
-            except KeyboardInterrupt:
-                break
+
+            for proc in all_processes:
+                proc.join()
+
+            reader = DBReader(token)
+            for t in things:
+                if t.get_connected_channels():
+                    print(reader.get_thing_summary(t))
