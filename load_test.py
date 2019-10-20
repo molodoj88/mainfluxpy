@@ -21,7 +21,7 @@ def _test(_things, event):
     if not connected_channels:
         print("Thing {} is not connected to any channel".format(name))
         return
-    channel_id = connected_channels[0]
+    channel_id = connected_channels[0]["id"]
     if RANDOM_CHANNEL:
         pass
     for i in range(1, MESSAGES_BY_THING + 1):
