@@ -157,7 +157,8 @@ class DBReader:
         msgs = self.get_thing_messages(thing)
         msg_count = []
         for item in msgs:
-            msg_count.append(len(msgs[item]))
+            if msgs[item]:
+                msg_count.append(len(msgs[item]))
         return {'channels':len(msgs), 'messages':msg_count, 'total messages':sum(msg_count)}
 
     def get_channel_summary(self, channel):
