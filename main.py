@@ -31,9 +31,11 @@ def get_channels(token):
 
 
 def get_all_things(token):
+    # TODO Сделать получение всех устройств (если их больше 100)
     url = "{}/things".format(MAINFLUX_URL)
     headers = {"Authorization": token}
-    response = requests.get(url, headers=headers)
+    params = {"limit": 100}
+    response = requests.get(url, headers=headers, params=params)
     return response.json()["things"]
 
 

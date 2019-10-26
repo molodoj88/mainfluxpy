@@ -1,7 +1,7 @@
 from settings import *
 import requests
 from channel import Channel
-from thing import Thing
+from thing import ThingsFactory
 from message import Message
 from pprint import pprint
 
@@ -47,7 +47,7 @@ class DBReader:
             things = ch.get_things()
             self._things[ch_name] = {"channel":ch, "things":[]}
             for th in things:
-                self._things[ch_name]['things'].append(Thing(th['id'], th['name'], th['key'], self._token))
+                self._things[ch_name]['things'].append(ThingsFactory.get_thing(th['id'], th['name'], th['key'], self._token))
 
     def _get_messages(self, channel_id, thing_key, offset=0, limit=10):
         url = "{}/channels/{}/messages".format(DB_READER_URL, channel_id)

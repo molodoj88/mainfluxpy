@@ -1,14 +1,15 @@
 import threading
-from thing import Thing
+from thing import ThingsFactory
 from message import RandomMessage
 from random import choice, random
 from main import get_all_things, get_token
 from queue import Queue
 from time import sleep
 from dbreader import DBReader
+from paho.mqtt.client import error_string
 
 
-MESSAGES_BY_THING = 10
+MESSAGES_BY_THING = 1
 RANDOM_CHANNEL = False
 
 
@@ -26,9 +27,10 @@ def _test(_things, event):
     if RANDOM_CHANNEL:
         pass
     for i in range(1, MESSAGES_BY_THING + 1):
-        print("Sending message n.{} from thing `{}`".format(i, name))
         message = RandomMessage(name)
-        _thing.send_message(message.get_json(), channel_id)
+        result = _thing.send_message(message.get_json(), channel_id)
+        print("Message n.{} from thing `{}` has been sent. Result: {}".format(i, name, error_string(result.rc)))
+
         sleep(random())
 
 
@@ -38,11 +40,11 @@ if __name__ == "__main__":
     if token:
         _things = get_all_things(token)
         for t in _things:
-            Thing(t["id"], t["name"], t["key"], token)
-        if Thing.things:
+            ThingsFactory.get_thing(t["id"], t["name"], t["key"], token)
+        if ThingsFactory.things:
             queue = Queue()
             stop_event = threading.Event()
-            for t in Thing.things:
+            for t in ThingsFactory.things:
                 queue.put(t)
             while True:
                 try:
@@ -58,6 +60,6 @@ if __name__ == "__main__":
                 proc.join()
 
             reader = DBReader(token)
-            for t in Thing.things:
+            for t in ThingsFactory.things:
                 if t.get_connected_channels():
                     print(reader.get_thing_summary(t))

@@ -4,7 +4,6 @@ import paho.mqtt.client as mqtt
 
 
 class Thing:
-    things = []
 
     @staticmethod
     def create_thing(token, thing_name):
@@ -21,18 +20,8 @@ class Thing:
         headers = {"Authorization": token}
         response = requests.delete(url, headers=headers)
         if response.status_code == 204:
-            thing = Thing.get_thing_by_id(thing_id)
-            if thing:
-                Thing.things.remove(thing)
+            ThingsFactory.remove_thing(thing_id)
             return True
-
-    @staticmethod
-    def get_thing_by_id(thing_id):
-        thing = None
-        for t in Thing.things:
-            if t.get_id() == thing_id:
-                thing = t
-        return thing
 
     def __init__(self, thing_id, thing_name, thing_key, user_token):
         self._id = thing_id
@@ -43,7 +32,6 @@ class Thing:
         self._get_connected_channels()
         self.mqtt_client = mqtt.Client()
         self.set_up_mqtt_client()
-        Thing.things.append(self)
 
     def _get_connected_channels(self, offset=0, limit=100):
         url = "{}/things/{}/channels".format(MAINFLUX_URL, self._id)
@@ -78,7 +66,7 @@ class Thing:
 
     def send_message(self, message, channel_id):
         topic = "channels/{}/messages".format(channel_id)
-        self.mqtt_client.publish(topic, message)
+        return self.mqtt_client.publish(topic, message)
 
     def connect_to_channel(self, channel_id):
         url = "{}/channels/{}/things/{}".format(MAINFLUX_URL, channel_id, self._id)
@@ -88,3 +76,30 @@ class Thing:
         if response.status_code == 200:
             self._get_connected_channels()
             return True
+
+
+class ThingsFactory:
+    things = []
+
+    @classmethod
+    def get_thing(cls, *args, **kwargs):
+        thing_id, thing_name, thing_key, user_token = args
+        thing = cls._get_thing_by_id(thing_id)
+        if not thing:
+            thing = Thing(thing_id, thing_name, thing_key, user_token)
+            cls.things.append(thing)
+        return thing
+
+    @classmethod
+    def _get_thing_by_id(cls, thing_id):
+        thing = None
+        for t in cls.things:
+            if t.get_id() == thing_id:
+                thing = t
+        return thing
+
+    @classmethod
+    def remove_thing(cls, thing_id):
+        thing = cls._get_thing_by_id(thing_id)
+        if thing:
+            cls.things.remove(thing)
