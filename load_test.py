@@ -7,13 +7,14 @@ from queue import Queue
 from time import sleep
 from dbreader import DBReader
 from paho.mqtt.client import error_string
+import paho.mqtt.client as paho
 
 
-MESSAGES_BY_THING = 1
+MESSAGES_BY_THING = 10
 RANDOM_CHANNEL = False
 
 
-def _test(_things, event):
+def _test(_things, event, counter):
     _thing = _things.get()
     if _things.empty():
         event.set()
@@ -29,9 +30,11 @@ def _test(_things, event):
     for i in range(1, MESSAGES_BY_THING + 1):
         message = RandomMessage(name)
         result = _thing.send_message(message.get_json(), channel_id)
-        print("Message n.{} from thing `{}` has been sent. Result: {}".format(i, name, error_string(result.rc)))
-
-        sleep(random())
+        counter["all"] += 1
+        if result.rc != paho.MQTT_ERR_SUCCESS:
+            counter["errors"] += 1
+            print("Thing {}, message n. {}, error: {}".format(name, i, error_string(result.rc)))
+        # sleep(random())
 
 
 if __name__ == "__main__":
@@ -42,15 +45,17 @@ if __name__ == "__main__":
         for t in _things:
             ThingsFactory.get_thing(t["id"], t["name"], t["key"], token)
         if ThingsFactory.things:
-            queue = Queue()
+            things_queue = Queue()
+            counter = {"all": 0, "errors": 0}
             stop_event = threading.Event()
             for t in ThingsFactory.things:
-                queue.put(t)
+                things_queue.put(t)
+            print("Start process ({} messages by thing)".format(MESSAGES_BY_THING))
             while True:
                 try:
                     if stop_event.is_set():
                         break
-                    process = threading.Thread(target=_test, args=(queue, stop_event))
+                    process = threading.Thread(target=_test, args=(things_queue, stop_event, counter))
                     all_processes.append(process)
                     process.start()
                 except KeyboardInterrupt:
@@ -59,7 +64,9 @@ if __name__ == "__main__":
             for proc in all_processes:
                 proc.join()
 
-            reader = DBReader(token)
-            for t in ThingsFactory.things:
-                if t.get_connected_channels():
-                    print(reader.get_thing_summary(t))
+            # reader = DBReader(token)
+            # for t in ThingsFactory.things:
+            #     if t.get_connected_channels():
+            #         print(reader.get_thing_summary(t))
+
+            print("Summary:\n{}".format(counter))
