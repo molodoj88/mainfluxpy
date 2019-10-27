@@ -21,9 +21,6 @@ def _test(_things, event, counter):
         return
     name = _thing.get_id()
     connected_channels = _thing.get_connected_channels()
-    if not connected_channels:
-        print("Thing {} is not connected to any channel".format(name))
-        return
     channel_id = connected_channels[0]["id"]
     if RANDOM_CHANNEL:
         pass
@@ -49,6 +46,9 @@ if __name__ == "__main__":
             counter = {"all": 0, "errors": 0}
             stop_event = threading.Event()
             for t in ThingsFactory.things:
+                connected_channels = t.get_connected_channels()
+                if not connected_channels:
+                    continue
                 things_queue.put(t)
             print("Start process ({} messages by thing)".format(MESSAGES_BY_THING))
             while True:
@@ -64,9 +64,9 @@ if __name__ == "__main__":
             for proc in all_processes:
                 proc.join()
 
-            # reader = DBReader(token)
-            # for t in ThingsFactory.things:
-            #     if t.get_connected_channels():
-            #         print(reader.get_thing_summary(t))
+            reader = DBReader(token)
+            for t in ThingsFactory.things:
+                if t.get_connected_channels():
+                    print(reader.get_thing_summary(t))
 
             print("Summary:\n{}".format(counter))
