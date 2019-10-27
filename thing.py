@@ -54,7 +54,6 @@ class Thing:
         return self._id
 
     def set_up_mqtt_client(self):
-        print("Setting up mqtt client for thing {}".format(self._id))
         def on_connect(client, userdata, flags, rc):
             print("Connected to mainflux mqtt broker with result code " + str(rc))
         self.mqtt_client.on_connect = on_connect
@@ -62,7 +61,7 @@ class Thing:
         try:
             self.mqtt_client.connect(MAINFLUX_IP)
         except Exception as e:
-            print("Error:\n{}".format(e))
+            print("Error while setting up mqtt client for thing {}:\n{}".format(self._id, e))
 
     def send_message(self, message, channel_id):
         topic = "channels/{}/messages".format(channel_id)
