@@ -2,6 +2,8 @@ from settings import *
 import requests
 import paho.mqtt.client as mqtt
 
+LIMIT = 100
+
 
 class Thing:
 
@@ -12,7 +14,10 @@ class Thing:
         params = {"name": thing_name}
         response = requests.post(url, headers=headers, json=params)
         if response.status_code == 201:
-            return response.headers["Location"].split('/')[-1]
+            thing_id = response.headers["Location"].split('/')[-1]
+            all_things = Thing.get_all_things(token)
+            thing = [t for t in all_things if t['id'] == thing_id][0]
+            return ThingsFactory.get_thing(thing["id"], thing["name"], thing["key"], token)
 
     @staticmethod
     def remove_thing(token, thing_id):
@@ -22,6 +27,21 @@ class Thing:
         if response.status_code == 204:
             ThingsFactory.remove_thing(thing_id)
             return True
+
+    @staticmethod
+    def get_all_things(token, offset=0):
+        url = "{}/things".format(MAINFLUX_URL)
+        headers = {"Authorization": token}
+        params = {"limit": LIMIT, "offset": offset}
+        response = requests.get(url, headers=headers, params=params)
+        if response.status_code == 200:
+            response_json = response.json()
+            total = response_json['total']
+            things = response_json['things']
+            if offset < total:
+                offset += LIMIT
+                things += Thing.get_all_things(token, offset)
+            return things
 
     def __init__(self, thing_id, thing_name, thing_key, user_token):
         self._id = thing_id
@@ -71,10 +91,10 @@ class Thing:
         url = "{}/channels/{}/things/{}".format(MAINFLUX_URL, channel_id, self._id)
         headers = {"Authorization": self._token}
         response = requests.put(url, headers=headers)
-        print(response)
         if response.status_code == 200:
-            self._get_connected_channels()
-            return True
+            pass
+        else:
+            print(response.status_code)
 
 
 class ThingsFactory:

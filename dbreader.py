@@ -19,15 +19,17 @@ from pprint import pprint
 #     }
 # ]
 
+LIMIT = 100
+
 class DBReader:
     def __init__(self, user_token):
         self._token = user_token
         self._channels = []
         self._things = {}
-        self._messages = []
-        self._get_channels()
-        self._get_things()
-        self._get_all_messages(limit=5)
+        # self._messages = []
+        # self._get_channels()
+        # self._get_things()
+        # self._get_all_messages(limit=5)
 
     def _get_channels(self, offset=0, limit=100):
         url = "{}/channels".format(MAINFLUX_URL)
@@ -47,9 +49,12 @@ class DBReader:
             things = ch.get_things()
             self._things[ch_name] = {"channel":ch, "things":[]}
             for th in things:
-                self._things[ch_name]['things'].append(ThingsFactory.get_thing(th['id'], th['name'], th['key'], self._token))
+                self._things[ch_name]['things'].append(ThingsFactory.get_thing(th['id'],
+                                                                               th['name'],
+                                                                               th['key'],
+                                                                               self._token))
 
-    def _get_messages(self, channel_id, thing_key, offset=0, limit=10):
+    def _get_messages(self, channel_id, thing_key, offset=0, limit=LIMIT):
         url = "{}/channels/{}/messages".format(DB_READER_URL, channel_id)
         headers = { "Authorization": thing_key}
         params = {"offset": offset, "limit": limit}
@@ -61,7 +66,7 @@ class DBReader:
             return
         pass
 
-    def _get_all_messages(self, offset=0, limit=10):
+    def _get_all_messages(self, offset=0, limit=100):
         for ch in self._things:
             ch_name = ch
             ch_id = self._things[ch]['channel'].get_id()
@@ -127,25 +132,29 @@ class DBReader:
     def get_thing_messages(self, thing):
         th_key = thing.get_key()
         connected_channels = thing.get_connected_channels()
-        thing_messages = {}
+        th_msg = []
         if connected_channels:
             for ch in connected_channels:
-                ch_id = ch['id']# ch_id = ch.get_id()
-                ch_name = ch['name']#ch_name = ch.get_name()
+                ch_id = ch['id']
                 resp = self._get_messages(ch_id, th_key)
                 total_msgs = resp['total']
                 th_msg = resp['messages']
-                if total_msgs > 10:
-                    th_msg += self._get_messages(ch_id, th_key, offset=10, limit=total_msgs)['messages']
-                thing_messages[ch_name] = th_msg
-        return thing_messages
+                if not th_msg:
+                    return []
+                offset = LIMIT
+                if total_msgs > LIMIT:
+                    while offset < total_msgs:
+                        th_msg += self._get_messages(ch_id, th_key, offset=offset)['messages']
+                        offset += LIMIT
+                th_msg = [message for message in th_msg if message["publisher"] == thing.get_id()]
+        return th_msg
 
     def get_channel_messages(self, channel):
         ch_id = channel.get_id()
         connected_things = channel.get_things()
         channel_messages = []
         if connected_things:
-            th_key = connected_things[0]['key'] #th_key = connected_things[0].get_key()
+            th_key = connected_things[0]['key']
             resp = self._get_messages(ch_id, th_key)
             total_msgs = resp['total']
             channel_messages = resp['messages']
@@ -155,13 +164,12 @@ class DBReader:
 
     def get_thing_summary(self, thing):
         msgs = self.get_thing_messages(thing)
-        msg_count = []
-        for item in msgs:
-            if msgs[item]:
-                msg_count.append(len(msgs[item]))
-        return {'channels':len(msgs), 'messages':msg_count, 'total messages':sum(msg_count)}
+        return {'thing_id': thing.get_id(), 'total messages': len(msgs)}
 
     def get_channel_summary(self, channel):
         msgs = self.get_channel_messages(channel)
         connected_things = channel.get_things()
-        return {'things':len(connected_things), 'total messages':len(msgs)}
+        return {'things': len(connected_things), 'total messages': len(msgs)}
+
+    def get_thing_msg_count(self, thing):
+        return self.get_thing_summary(thing)['total messages']
