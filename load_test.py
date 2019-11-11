@@ -76,8 +76,6 @@ if __name__ == "__main__":
             for proc in all_processes:
                 proc.join()
 
-            sleep(3)
-
             for t in connected_things:
                 thing_id = t.get_id()
                 after = reader.get_thing_msg_count(t)
