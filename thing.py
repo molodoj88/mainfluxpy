@@ -1,6 +1,6 @@
 from settings import *
 import requests
-import paho.mqtt.client as mqtt
+from connector import MqttConnector
 
 LIMIT = 100
 
@@ -50,8 +50,7 @@ class Thing:
         self._token = user_token
         self._channels = []
         self._get_connected_channels()
-        self.mqtt_client = mqtt.Client()
-        self.set_up_mqtt_client()
+        self.mqtt_connector = MqttConnector(MAINFLUX_IP, self._id, self._key)
 
     def _get_connected_channels(self, offset=0, limit=100):
         url = "{}/things/{}/channels".format(MAINFLUX_URL, self._id)
@@ -73,19 +72,9 @@ class Thing:
     def get_id(self):
         return self._id
 
-    def set_up_mqtt_client(self):
-        def on_connect(client, userdata, flags, rc):
-            print("Connected to mainflux mqtt broker with result code " + str(rc))
-        self.mqtt_client.on_connect = on_connect
-        self.mqtt_client.username_pw_set(self._id, self._key)
-        try:
-            self.mqtt_client.connect(MAINFLUX_IP)
-        except Exception as e:
-            print("Error while setting up mqtt client for thing {}:\n{}".format(self._id, e))
-
     def send_message(self, message, channel_id):
         topic = "channels/{}/messages".format(channel_id)
-        return self.mqtt_client.publish(topic, message)
+        return self.mqtt_connector.send_message(message, topic)
 
     def connect_to_channel(self, channel_id):
         url = "{}/channels/{}/things/{}".format(MAINFLUX_URL, channel_id, self._id)
