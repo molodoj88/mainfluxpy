@@ -74,7 +74,8 @@ class Thing:
 
     def send_message(self, message, channel_id):
         topic = "channels/{}/messages".format(channel_id)
-        return self.mqtt_connector.send_message(message, topic)
+        msg = self.mqtt_connector.send_message(message, topic)
+        return msg
 
     def connect_to_channel(self, channel_id):
         url = "{}/channels/{}/things/{}".format(MAINFLUX_URL, channel_id, self._id)
