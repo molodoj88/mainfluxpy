@@ -1,6 +1,19 @@
 from .api_request import GetRequest, PostRequest, DeleteRequest, PutRequest, PatchRequest
 from typing import Iterable
 from json.decoder import JSONDecodeError
+from .app import MainfluxApp
+
+
+class ApiException(Exception):
+    pass
+
+
+class AppNotProvided(ApiException):
+    pass
+
+
+class AppIsNotValid(ApiException):
+    pass
 
 
 def api_path(path):
@@ -19,7 +32,14 @@ def api_path(path):
 
 
 class AbstractApi:
+    """
+    Base class for Mainflux api
+    """
     def __init__(self, app=None):
+        if app is None:
+            raise AppNotProvided("You should provide app to instantiate Api class.")
+        if not isinstance(app, MainfluxApp):
+            raise AppIsNotValid("App must be an instance of class MainfluxApp")
         self._app = app
         self._address = self._app.config.MAINFLUX_URL
         self._token = None
