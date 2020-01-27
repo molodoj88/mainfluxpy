@@ -23,12 +23,14 @@ from random import randint
 #           |          Link | l     | String  |
 #           +---------------+-------+---------+
 
+
 class Message:
     def __init__(self, channel, publisher, protocol,
-                        b_name=None, b_time=0, b_unit=None, b_value=None,
-                        b_sum=None, b_ver=5, name=None, unit=None, value=None,
-                        str_value=None, bool_value=None, data_value=None,
-                        sum=None, time=0, upd_time=None, link=None):
+                 # TODO Put all optional params in kwargs
+                       b_name=None, b_time=0, b_unit=None, b_value=None,
+                       b_sum=None, b_ver=5, name=None, unit=None, value=None,
+                       str_value=None, bool_value=None, data_value=None,
+                       sum=None, time=0, upd_time=None, link=None):
         self._channel = channel
         self._publisher = publisher
         self._protocol = protocol
