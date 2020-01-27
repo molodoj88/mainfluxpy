@@ -1,7 +1,8 @@
-from .api_request import GetRequest, PostRequest, DeleteRequest, PutRequest, PatchRequest
+from .api_request import ApiRequest, GetRequest, PostRequest, DeleteRequest, PutRequest, PatchRequest
 from typing import Iterable
 from json.decoder import JSONDecodeError
 from .app import MainfluxApp
+from typing import List
 
 
 class ApiException(Exception):
@@ -34,6 +35,7 @@ def api_path(path):
 class AbstractApi:
     """
     Base class for Mainflux api
+    :param app: the MainfluxApp instance
     """
     def __init__(self, app=None):
         if app is None:
@@ -53,13 +55,25 @@ class AbstractApi:
     def token(self, token):
         self._token = token
 
-    def _prepare_url(self, path: str):
+    def _prepare_url(self, path: str) -> str:
+        """
+        Prepares url to pass in api method.
+        Works with api_path decorator
+        :param path: path of Mainflux api method
+        :return: full url for api method
+        """
         main_address = self._address
         if not path.startswith("/"):
             path = "/" + path
         return "{}{}".format(main_address, path)
 
-    def _get_total(self, resource, request):
+    def _get_total(self, resource: str, request: ApiRequest) -> List[dict]:
+        """
+        Gets all instances of provided resource (things or channels) from Mainflux
+        :param resource: str, 'things' or 'channels'
+        :param request: request object
+        :return: list of dicts with requested resource
+        """
         response = request()
         try:
             json = response.json()
@@ -78,9 +92,15 @@ class AbstractApi:
                 _offset += self.LIMIT
         return _all
 
-    def _create_resource(self, name, token=None, url=None):
-        if not token:
-            token = self._token
+    def _create_resource(self, name: str, token: str = None, url: str = None) -> str:
+        """
+        Creates thing or channel. Resource is selected based on url.
+        :param name: name of resource created
+        :param token: api token
+        :param url: api url
+        :return: id of resource created
+        """
+        token = token or self._token
         headers = {"Authorization": token}
         data = {"name": name}
         request = PostRequest(url=url, json=data, headers=headers)
@@ -88,16 +108,30 @@ class AbstractApi:
         resource_id = response.headers["Location"].split("/")[-1]
         return resource_id
 
-    def _create_resource_bulk(self, resource, names: Iterable, token=None, url=None):
-        if not token:
-            token = self._token
+    def _create_resource_bulk(self, resource: str, names: Iterable, token: str = None, url: str = None) -> dict:
+        """
+        Creates a bunch of things or channels.
+        :param resource: 'things' or 'channels'
+        :param names: iterable with names of resources created
+        :param token: api token
+        :param url: api url
+        :return: dict ({'things'|'channels': [{'id': id, 'name': name, 'key': key}, {...}, {...}, ...]})
+        """
+        token = token or self._token
         headers = {"Authorization": token}
         data = [{"name": name} for name in names]
         request = PostRequest(url=url, json=data, headers=headers)
         response = request()
         return response.json()[resource]
 
-    def _delete_resource(self, resource_id, token=None, url=None):
+    def _delete_resource(self, resource_id: str, token: str = None, url: str = None) -> int:
+        """
+        Deletes resource ('things' or 'channels')
+        :param resource_id: id of thing or channel to be deleted
+        :param token: api token
+        :param url: url
+        :return: status code of response
+        """
         if not token:
             token = self._token
         url += "/{}".format(resource_id)
@@ -109,13 +143,13 @@ class AbstractApi:
 
 class UserApi(AbstractApi):
     @api_path("users")
-    def create_user(self, username, password, url=None):
+    def create_user(self, username: str, password: str, url: str = None) -> int:
         """
-        Create user
-        :param url: url provided by @api_path decorator
+        Creates user
         :param username: username
         :param password: password
-        :return:
+        :param url: url provided by @api_path decorator
+        :return: status code of response
         """
         data = {"email": username, "password": password}
         request = PostRequest(url=url, json=data)
