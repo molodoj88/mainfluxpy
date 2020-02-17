@@ -1,7 +1,6 @@
 from .api_request import ApiRequest, GetRequest, PostRequest, DeleteRequest, PutRequest, PatchRequest
 from typing import Iterable
 from json.decoder import JSONDecodeError
-from .app import MainfluxApp
 from typing import List
 
 
@@ -10,10 +9,6 @@ class ApiException(Exception):
 
 
 class AppNotProvided(ApiException):
-    pass
-
-
-class AppIsNotValid(ApiException):
     pass
 
 
@@ -40,8 +35,6 @@ class AbstractApi:
     def __init__(self, app=None):
         if app is None:
             raise AppNotProvided("You should provide app to instantiate Api class.")
-        if not isinstance(app, MainfluxApp):
-            raise AppIsNotValid("App must be an instance of class MainfluxApp")
         self._app = app
         self._address = self._app.config.MAINFLUX_URL
         self._token = None
@@ -245,7 +238,7 @@ class ChannelApi(AbstractApi):
         return channels
 
     @api_path(PATH)
-    def get_channel(self, channel_id, token=None, url=None):
+    def get_channel(self, channel_id, token=None, url=None) -> dict:
         token = token or self._token
         url += f"/{channel_id}"
         headers = {"Authorization": token}

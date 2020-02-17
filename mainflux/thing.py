@@ -1,67 +1,55 @@
-from . import settings
-from .connector import MqttConnector
+from .app import MainfluxApp
+from .channel import Channel
 
-LIMIT = 100
+
+class ThingException(Exception):
+    pass
+
+
+class NoSuchThingException(ThingException):
+    pass
 
 
 class Thing:
-
-    @staticmethod
-    def create_thing(token, thing_name):
-        pass
-
-    @staticmethod
-    def remove_thing(token, thing_id):
-        pass
-
-    @staticmethod
-    def get_all_things(token, offset=0):
-        pass
-
-    def __init__(self, thing_id, thing_name, thing_key, user_token):
+    """
+    Base class implements mainflux thing
+    """
+    def __init__(self, thing_id: str, app: MainfluxApp):
         self._id = thing_id
-        self._name = thing_name
-        self._key = thing_key
-        self._token = user_token
+        self._app = app
+        self._name = None
+        self._key = None
         self._channels = []
+        self._init_thing()
+
+    def _init_thing(self):
+        self._get_thing_params()
         self._get_connected_channels()
-        self.mqtt_connector = MqttConnector(settings.MAINFLUX_IP, self._id, self._key)
 
-    def _get_connected_channels(self, offset=0, limit=100):
-        pass
+    def _get_thing_params(self):
+        """
+        Gets thing name and key and stores it
+        """
+        params = self._app.api.get_thing(self._id)
+        if not params:
+            raise NoSuchThingException("There is no such thing in mainflux database")
+        self._name = params["name"]
+        self._key = params["key"]
 
-    def get_connected_channels(self):
+    def _get_connected_channels(self):
+        channels = self._app.api.get_connected_channels(self._id)
+        self._channels.extend([self._app.channel_repository.get_channel(ch["id"], ch["name"]) for ch in channels])
+
+    @property
+    def connected_channels(self):
         return self._channels
 
-    def get_name(self):
+    @property
+    def name(self):
         return self._name
 
-    def get_key(self):
-        return self._key
-
-    def get_id(self):
-        return self._id
-
     def send_message(self, message, channel_id):
-        topic = "channels/{}/messages".format(channel_id)
-        msg = self.mqtt_connector.send_message(message, topic)
-        return msg
+        pass
 
     def connect_to_channel(self, channel_id):
-        pass
-
-
-class ThingsFactory:
-    things = {}
-
-    @classmethod
-    def get_thing(cls, *args, **kwargs):
-        pass
-
-    @classmethod
-    def create_thing(cls):
-        pass
-
-    @classmethod
-    def remove_thing(cls, thing_id):
         pass

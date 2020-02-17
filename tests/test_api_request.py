@@ -3,16 +3,16 @@ from mainflux.api_request import GetRequest, PostRequest
 
 class TestRequests:
     """Tests of requests from mainflux.api_request"""
-    def test_get_request(self):
+    def test_get_request(self, http_client):
         """
         GetRequest entity call should return response with status code 200.
         """
         test_url = 'http://httpbin.org/get'
-        request = GetRequest(url=test_url)
+        request = GetRequest(client=http_client, url=test_url)
         response = request()
         assert str(response.status_code) == '200'
 
-    def test_get_request_with_params(self):
+    def test_get_request_with_params(self, http_client):
         """
         GetRequest entity with params provided should make GET request
         with http parameters. If we provide params as dict like that:
@@ -26,16 +26,16 @@ class TestRequests:
         """
         test_url = 'http://httpbin.org/anything'
         params = {'param1': 'param1', 'param2': 'param2'}
-        request = GetRequest(url=test_url, params=params)
+        request = GetRequest(client=http_client, url=test_url, params=params)
         response = request()
         json = response.json()
         for k, v in params.items():
             assert json['args'][k] == v
 
-    def test_post_request_with_params(self):
+    def test_post_request_with_params(self, http_client):
         test_url = 'http://httpbin.org/anything'
         params = {"param1": "param1", "param2": "param2"}
-        request = PostRequest(url=test_url, params=params)
+        request = PostRequest(client=http_client, url=test_url, params=params)
         response = request()
         json = response.json()
         assert str(response.status_code) == '200'
@@ -43,21 +43,21 @@ class TestRequests:
         for k, v in params.items():
             assert json['args'][k] == v
 
-    def test_post_request_with_data(self):
+    def test_post_request_with_data(self, http_client):
         """
         PostRequest call with provided 'json' parameter.
         The response must contain the data sent.
         """
         test_url = 'http://httpbin.org/anything'
         data = {'data1': 'somedata1', 'data2': 'somedata2'}
-        request = PostRequest(url=test_url, json=data)
+        request = PostRequest(client=http_client, url=test_url, json=data)
         response = request()
         json = response.json()
         assert str(response.status_code) == '200'
         assert json['method'] == 'POST'
         assert json['json'] == data
 
-    def test_post_request_with_headers(self):
+    def test_post_request_with_headers(self, http_client):
         """
         By default, the "Content-Type: application/json" header
         is added to all requests. We also check the addition
@@ -66,7 +66,7 @@ class TestRequests:
         """
         test_url = 'http://httpbin.org/anything'
         headers = {'Some-Custom-Header': 'Custom header value'}
-        request = PostRequest(url=test_url, headers=headers)
+        request = PostRequest(client=http_client, url=test_url, headers=headers)
         response = request()
         json = response.json()
         assert str(response.status_code) == '200'

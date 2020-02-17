@@ -1,4 +1,5 @@
 from .api import Api
+from .channel import ChannelRepository
 from types import SimpleNamespace
 from . import settings
 import os
@@ -22,4 +23,5 @@ class MainfluxApp:
         self.config = config
         self.api = Api(self)
         self.api.token = self.api.get_token()
+        self.channel_repository = ChannelRepository(self)
         # TODO Add https support

@@ -1,9 +1,15 @@
 from typing import Dict
-import requests
+import httpx
 
 
 class ApiRequest:
-    def __init__(self, url: str = "", params: Dict = None, json: Dict = None, headers: Dict = None):
+    def __init__(self, client=None, url: str = "", params: Dict = None, json: Dict = None, headers: Dict = None):
+        if client is None:
+            self._client = httpx.Client()
+            self._own_client = True
+        else:
+            self._client = client
+            self._own_client = False
         self._url = url
         self._headers = {"Content-Type": "application/json"}
         if headers:
@@ -15,7 +21,7 @@ class ApiRequest:
 
     def _execute(self):
         method = self.method
-        func = getattr(requests, method)
+        func = getattr(self._client, method)
         kwargs = {"headers": self._headers}
         if self._params:
             kwargs["params"] = self._params
@@ -25,6 +31,10 @@ class ApiRequest:
 
     def __call__(self, *args, **kwargs):
         return self._execute()
+        
+    def __del__(self):
+        if self._own_client:
+            self._client.close()
 
     def update_params(self, params: dict):
         self._params.update(params)
