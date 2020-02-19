@@ -114,7 +114,7 @@ class Message:
     def get_update_time(self):
         return self._upd_time
 
-    def get_json(self):
+    def as_json(self):
         message = [
             {
                 "bt": int(datetime.now().timestamp()),

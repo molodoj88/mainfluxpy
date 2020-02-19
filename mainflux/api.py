@@ -65,7 +65,8 @@ class AbstractApi:
         Gets all instances of provided resource (things or channels) from Mainflux
         :param resource: str, 'things' or 'channels'
         :param request: request object
-        :return: list of dicts with requested resource
+        :return: list of dicts with requested resource.
+                 dict ({'things'|'channels': [{'id': id, 'name': name, 'key': key}, {...}, {...}, ...]})
         """
         response = request()
         try:
@@ -154,7 +155,14 @@ class ThingApi(AbstractApi):
     PATH = "things"
 
     @api_path(PATH)
-    def get_things(self, name_pattern=None, token=None, url=None):
+    def get_things(self, name_pattern: str = None, token: str = None, url: str = None) -> List[dict]:
+        """
+        Get all (or matching pattern) things from mainflux
+        :param name_pattern: pattern to filter things by name. Things whose names contain a pattern will be selected
+        :param token: token
+        :param url: url
+        :return: list of thing dicts, see AbstractApi._get_total documentation
+        """
         token = token or self._token
         headers = {"Authorization": token}
         params = {"limit": self.LIMIT}
@@ -166,6 +174,13 @@ class ThingApi(AbstractApi):
 
     @api_path(PATH)
     def get_thing(self, thing_id, token=None, url=None):
+        """
+        Gets one thing from mainflux based on id
+        :param thing_id: id of thing desired
+        :param token: token
+        :param url: url
+        :return: dict ({ 'id': id, 'name': name, 'key': key, 'metadata': { 'description': description } })
+        """
         token = token or self._token
         url += f"/{thing_id}"
         headers = {"Authorization": token}
@@ -174,7 +189,14 @@ class ThingApi(AbstractApi):
         return response.json()
 
     @api_path(PATH)
-    def get_connected_channels(self, thing_id, token=None, url=None):
+    def get_connected_channels(self, thing_id: str, token: str = None, url: str = None) -> List[dict]:
+        """
+        Gets channels connected to thing
+        :param thing_id: id of thing
+        :param token: token
+        :param url: url
+        :return: list if dicts with channels, see AbstractApi._get_total documentation
+        """
         token = token or self._token
         url += f"/{thing_id}/channels"
         headers = {"Authorization": token}
@@ -184,14 +206,21 @@ class ThingApi(AbstractApi):
         return channels
 
     @api_path(PATH)
-    def create_thing(self, name, token=None, url=None):
+    def create_thing(self, name: str, token: str = None, url: str = None) -> str:
+        """
+        Creates new thing on mainflux
+        :param name: name of things
+        :param token: token
+        :param url: url
+        :return: id of thing created
+        """
         if not name:
             raise AttributeError("You should provide name for new thing")
         thing_id = self._create_resource(name, token=token, url=url)
         return thing_id
 
     @api_path(f"{PATH}/bulk")
-    def create_things_bulk(self, names: Iterable, token=None, url=None):
+    def create_things_bulk(self, names: Iterable, token: str = None, url: str = None):
         if not names:
             raise AttributeError("You should provide names (iterable) for new things")
         things = self._create_resource_bulk("things", names=names, token=token, url=url)
@@ -272,7 +301,7 @@ class ChannelApi(AbstractApi):
                 # TODO Add log records for each deletion
 
     @api_path(PATH)
-    def connect_thing_to_channel(self, channel_id, thing_id, token=None, url=None):
+    def connect_thing_to_channel(self, thing_id, channel_id, token=None, url=None):
         token = token or self._token
         url += f"/{channel_id}/things/{thing_id}"
         headers = {"Authorization": token}
@@ -313,14 +342,15 @@ class Api(ThingApi, ChannelApi, UserApi):
         # Mainflux http API, as, for example, described here:
         # https://mainflux.readthedocs.io/en/latest/provisioning/#retrieving-provisioned-things
         self.LIMIT = 100
+        self.token = self.get_token()
 
     @api_path("tokens")
     def get_token(self, username=None, password=None, url=None):
         """
         Get auth token for making http requests
         :param url: url provided by @api_path decorator
-        :param username: str, optionally (default is taken from settings.py)
-        :param password: str, optionally (default is taken from settings.py)
+        :param username: str, optionally (default is taken from app.config)
+        :param password: str, optionally (default is taken from app.config)
         :return: str, token
         """
         if not (username or password):

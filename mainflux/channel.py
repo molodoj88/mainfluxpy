@@ -1,3 +1,5 @@
+from .transport import AbstractTransport
+from typing import Callable
 
 
 class ChannelException(Exception):
@@ -9,10 +11,19 @@ class NoSuchChannelException(ChannelException):
 
 
 class Channel:
-    def __init__(self, app, channel_id: str, channel_name: str = None):
+    def __init__(self, app, thing, channel_id: str, channel_name: str = None):
         self._app = app
         self._id = channel_id
         self._name = channel_name
+        self._thing = thing
+        self._transport: AbstractTransport = app.transport_factory.create_transport(self)
+        self._connect()
+
+    def __str__(self):
+        return f"Channel object:\nid: {self._id}\nname: {self._name}\ntransport: {self._app.config.TRANSPORT}"
+
+    def _connect(self):
+        self._app.add_task(self._transport.connect)
 
     @property
     def name(self):
@@ -24,18 +35,50 @@ class Channel:
                 self._name = channel["name"]
                 return self._name
 
+    @property
+    def app(self):
+        return self._app
+
+    @property
+    def thing(self):
+        return self._thing
+
+
+class PubChannel(Channel):
+    def __init__(self, app, thing, channel_id: str, channel_name: str):
+        super().__init__(app, thing, channel_id, channel_name)
+
+    async def send_message(self, message):
+        pass
+
+
+class SubChannel(Channel):
+    def __init__(self, app, thing, channel_id: str, channel_name: str):
+        super().__init__(app, thing, channel_id, channel_name)
+
+    async def subscribe(self, message_received_cb: Callable = None):
+        topic = f"channels/{self._id}/messages/#"
+        await self._transport.subscribe(topic, message_received_cb)
+
 
 class ChannelRepository:
     __channels = {}
 
     def __init__(self, app):
         self._app = app
-        self.__dict__ = self.__channels
 
-    def get_channel(self, channel_id, channel_name=None):
-        if channel_id not in self.__dict__.keys():
-            channel = Channel(self._app, channel_id, channel_name)
-            self.__dict__[channel_id] = channel
+    def get_pub_channel(self, thing, channel_id, channel_name=None):
+        if channel_id not in self.__channels.keys():
+            channel = PubChannel(self._app, thing, channel_id, channel_name)
+            self.__channels[channel_id] = channel
             return channel
         else:
-            return self.__dict__[channel_id]
+            return self.__channels[channel_id]
+
+    def get_sub_channel(self, thing, channel_id, channel_name=None):
+        if channel_id not in self.__channels.keys():
+            channel = SubChannel(self._app, thing, channel_id, channel_name)
+            self.__channels[channel_id] = channel
+            return channel
+        else:
+            return self.__channels[channel_id]

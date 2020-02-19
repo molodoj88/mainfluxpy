@@ -1,27 +1,67 @@
 from .api import Api
 from .channel import ChannelRepository
+from .transport import TransportFactory, MQTT
 from types import SimpleNamespace
-from . import settings
+import asyncio
 import os
 
 # TODO Add logs
 
 
+class ApplicationException(Exception):
+    pass
+
+
+class URLNotProvidedError(ApplicationException):
+    pass
+
+
+class UserEmailNotProvided(ApplicationException):
+    pass
+
+
+class UserPasswordNotProvided(ApplicationException):
+    pass
+
+
 class Config(SimpleNamespace):
-    MAINFLUX_IP: str = settings.MAINFLUX_IP
-    MAINFLUX_PORT: str = settings.MAINFLUX_PORT
-    DB_READER_IP: str = MAINFLUX_IP
-    DB_READER_PORT: str = settings.DB_READER_PORT
-    MAINFLUX_USER_EMAIL: str = os.getenv('MAINFLUX_USER')
-    MAINFLUX_USER_PASSWORD: str = os.getenv('MAINFLUX_USER_PASSWORD')
-    MAINFLUX_URL: str = f"http://{MAINFLUX_IP}:{MAINFLUX_PORT}"
-    DB_READER_URL: str = f"http://{DB_READER_IP}:{DB_READER_IP}"
+    pass
 
 
 class MainfluxApp:
-    def __init__(self, config: Config = Config()):
-        self.config = config
+    def __init__(self, url: str = None, port: str = "80", transport: str = MQTT, user_email: str = None, user_password: str = None):
+        if url is None:
+            raise URLNotProvidedError("You should provide url for connection to mainflux")
+        mainflux_url = f"http://{url}:{port}"
+        user_email = user_email or os.getenv('MAINFLUX_USER')
+        if not user_email:
+            raise UserEmailNotProvided
+        user_password = user_password or os.getenv('MAINFLUX_USER_PASSWORD')
+        if not user_password:
+            raise UserPasswordNotProvided
+        self.config = Config(
+            MAINFLUX_IP=url,
+            MAINFLUX_PORT=port,
+            MAINFLUX_USER_EMAIL=user_email,
+            MAINFLUX_USER_PASSWORD=user_password,
+            MAINFLUX_URL=mainflux_url,
+            TRANSPORT=transport
+        )
         self.api = Api(self)
-        self.api.token = self.api.get_token()
         self.channel_repository = ChannelRepository(self)
+        self.transport_factory = TransportFactory(self.config.TRANSPORT)
+        self.loop = asyncio.get_event_loop()
+        self.tasks = []
         # TODO Add https support
+
+    def run(self):
+        wait_tasks = asyncio.wait(self.tasks)
+        self.loop.run_until_complete(wait_tasks)
+
+    def add_task(self, task, args=()):
+        _task = self.loop.create_task(task(*args))
+        self.tasks.append(_task)
+
+    @property
+    def ip(self):
+        return self.config.MAINFLUX_IP
