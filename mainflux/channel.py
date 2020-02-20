@@ -47,18 +47,19 @@ class Channel:
 class PubChannel(Channel):
     def __init__(self, app, thing, channel_id: str, channel_name: str):
         super().__init__(app, thing, channel_id, channel_name)
+        self.topic = f"channels/{self._id}/messages/"
 
     async def send_message(self, message):
-        pass
+        await self._transport.send_message(message, self.topic)
 
 
 class SubChannel(Channel):
     def __init__(self, app, thing, channel_id: str, channel_name: str):
         super().__init__(app, thing, channel_id, channel_name)
+        self.topic = f"channels/{self._id}/messages/#"
 
     async def subscribe(self, message_received_cb: Callable = None):
-        topic = f"channels/{self._id}/messages/#"
-        await self._transport.subscribe(topic, message_received_cb)
+        await self._transport.subscribe(self.topic, message_received_cb)
 
 
 class ChannelRepository:

@@ -4,6 +4,7 @@ from .message import Message
 from typing import Callable
 import asyncio
 
+
 MQTT = "mqtt"
 HTTP = "http"
 COAP = "coap"
@@ -61,7 +62,7 @@ class AbstractTransport:
         self._url = url
         self._port = port
 
-    def send_message(self, message, topic):
+    async def send_message(self, message, topic):
         raise NotImplementedError
 
     async def subscribe(self, topic: str, message_received_cb=None):
@@ -104,8 +105,8 @@ class MqttTransport(AbstractTransport):
         :param topic: topic
         :return:
         """
-        if not self.connected:
-            await self.connect()
+        while not self.connected:
+            await asyncio.sleep(0.01)
         await self._send_message(message, topic)
 
     async def _connect(self):

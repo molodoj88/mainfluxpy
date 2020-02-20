@@ -1,4 +1,5 @@
 from .channel import PubChannel, SubChannel
+from .message import Message
 from typing import Callable
 import uuid
 
@@ -109,10 +110,10 @@ class Thing:
     def key(self):
         return self._key
 
-    def send_message(self, message):
+    def send_message(self, message: Message):
         """
         Sends message over pub channel
-        :param message: message.Message instance
+        :param message: message instance
         :return:
         """
         self._app.add_task(self._pub_channel.send_message, (message,))
