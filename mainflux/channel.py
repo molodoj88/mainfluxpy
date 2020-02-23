@@ -20,7 +20,7 @@ class Channel:
         self._connect()
 
     def __str__(self):
-        return f"Channel object:\nid: {self._id}\nname: {self._name}\ntransport: {self._app.config.TRANSPORT}"
+        return self._id
 
     def _connect(self):
         self._app.add_task(self._transport.connect)
@@ -50,7 +50,10 @@ class PubChannel(Channel):
         self.topic = f"channels/{self._id}/messages/"
 
     async def send_message(self, message):
-        await self._transport.send_message(message, self.topic)
+        await self._transport.send_message(message)
+
+    async def start_publishing(self):
+        await self._transport.start_publishing(self.topic)
 
 
 class SubChannel(Channel):

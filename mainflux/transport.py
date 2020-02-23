@@ -62,7 +62,15 @@ class AbstractTransport:
         self._url = url
         self._port = port
 
-    async def send_message(self, message, topic):
+    async def send_message(self, message):
+        """
+        Base method for sending message
+        :param message: message object
+        :return:
+        """
+        raise NotImplementedError
+
+    async def start_publishing(self, topic):
         raise NotImplementedError
 
     async def subscribe(self, topic: str, message_received_cb=None):
@@ -87,27 +95,34 @@ class MqttTransport(AbstractTransport):
                                                     self._port)
         self.mqtt_client = MQTTClient()
         self.connected = False
+        self.message_queue = asyncio.Queue(loop=self._app.loop)
         self._message_received_cb = None
 
     async def _send_message(self, message: Message, topic: str):
         result = None
-        message = message.as_json().encode('utf-8')
+        _message = message.as_json().encode('utf-8')
         try:
-            result = await self.mqtt_client.publish(topic, message, qos=QOS_1)
+            result = await self.mqtt_client.publish(topic, _message, qos=QOS_1)
         except ConnectException as ce:
             print("Connection failed: %s" % ce)
         return result
 
-    async def send_message(self, message: Message, topic: str):
+    async def start_publishing(self, topic):
+        while True:
+            await asyncio.sleep(0.001)
+            if not self.message_queue.empty():
+                message = await self.message_queue.get()
+                await self._send_message(message, topic)
+
+    async def send_message(self, message: Message):
         """
         Sends message to a topic
         :param message: message.Message instance
-        :param topic: topic
         :return:
         """
         while not self.connected:
             await asyncio.sleep(0.01)
-        await self._send_message(message, topic)
+        await self.message_queue.put(message)
 
     async def _connect(self):
         try:

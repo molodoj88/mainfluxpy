@@ -2,6 +2,7 @@ from .channel import PubChannel, SubChannel
 from .message import Message
 from typing import Callable
 import uuid
+import json
 
 
 PUB_CHANNEL_TEMPLATE = "pub_channel_for_{}"
@@ -31,8 +32,17 @@ class Thing:
         self._init_thing()
 
     def __str__(self):
-        return f"Thing object:\nid: {self._id}\nname: {self._name}\nkey: {self._key}" \
-               f"\npub_channel: {self._pub_channel}\nsub_channel: {self._sub_channel}"
+        thing_dict = {
+            "Thing": {
+                "id": self._id,
+                "name": self._name,
+                "key": self._key,
+                "Pub channel": str(self._pub_channel),
+                "Sub channel": str(self._sub_channel)
+            }
+        }
+        thing_str = json.dumps(thing_dict, indent=4)
+        return thing_str
 
     def _init_thing(self):
         self._get_thing_params()
@@ -118,6 +128,13 @@ class Thing:
         """
         self._app.add_task(self._pub_channel.send_message, (message,))
 
+    def start_publishing(self):
+        """
+        Starts publishing process (waits messages from assigned signal handler)
+        :return:
+        """
+        self._app.add_task(self._pub_channel.start_publishing)
+
     @staticmethod
     def _message_received_callback(message):
         packet = message.publish_packet
@@ -134,3 +151,44 @@ class Thing:
         if message_received_callback is not None:
             self._message_received_callback = message_received_callback
         self._app.add_task(self._sub_channel.subscribe, (self._message_received_callback,))
+
+
+class ThingsRepository:
+    __things = {}
+
+    def __init__(self, app):
+        self._app = app
+
+    def get_thing(self, thing_id=None, thing_name=None):
+        """
+        If no thing found in self.__things, creates new thing
+        :param thing_id: thing_id
+        :param thing_name: thing_name
+        :return:
+        """
+        if thing_id is None:
+            if thing_name is None:
+                # If thing_id and thing_name is not provided
+                thing = Thing(self._app)
+                self.__things[thing.thing_id] = thing
+                return thing
+            else:
+                # If no thing_id, but thing_name provided
+                thing = None
+                for thing_id, _thing in self.__things.items():
+                    if _thing.name == thing_name:
+                        return _thing
+                if thing is None:
+                    thing = Thing(self._app, thing_name=thing_name)
+                    self.__things[thing.thing_id] = thing
+                    return thing
+        else:
+            # If thing_id is provided, ignore thing_name
+            if not isinstance(thing_id, str):
+                raise ThingException("Thing id should be an str.")
+            if thing_id not in self.__things.keys():
+                thing = Thing(self._app, thing_id)
+                self.__things[thing_id] = thing
+                return thing
+            else:
+                return self.__things[thing_id]
