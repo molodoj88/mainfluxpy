@@ -20,8 +20,9 @@ class NotSupportedTransportError(TransportException):
 
 class TransportFactory:
 
-    def __init__(self, transport):
+    def __init__(self, transport, port: int = None):
         self.transport = transport
+        self.port = port
 
     @staticmethod
     def _create_mqtt_transport(channel, port: int = None):
@@ -39,7 +40,7 @@ class TransportFactory:
     def _create_coap_transport(channel, port: int = None):
         pass
 
-    def create_transport(self, channel, port: int = None):
+    def create_transport(self, channel):
         """
         Creates transport for channel based on app.config.TRANSPORT
         :param channel: channel object
@@ -47,11 +48,11 @@ class TransportFactory:
         :return:
         """
         if self.transport == MQTT:
-            return self._create_mqtt_transport(channel, port)
+            return self._create_mqtt_transport(channel, self.port)
         elif self.transport == HTTP:
-            return self._create_http_transport(channel, port)
+            return self._create_http_transport(channel, self.port)
         elif self.transport == COAP:
-            return self._create_coap_transport(channel, port)
+            return self._create_coap_transport(channel, self.port)
         else:
             raise NotSupportedTransportError(f"Transport '{self.transport}' is not supported")
 
