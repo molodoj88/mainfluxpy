@@ -29,14 +29,14 @@ class TestThingsApi:
         things = app.api.get_things()
         assert things == []
 
-    def test_thing_creation(self, app, random_thing_name):
-        test_name = random_thing_name()
+    def test_thing_creation(self, app, random_name):
+        test_name = random_name()
         thing_id = self.create_thing(test_name, app)
         THINGS_TO_DELETE.append(thing_id)
         assert thing_id is not None
 
-    def test_thing_bulk_creation(self, app, random_thing_name):
-        names = [random_thing_name() for i in range(self.BULK_CREATION_NUMBER)]
+    def test_thing_bulk_creation(self, app, random_name):
+        names = [random_name() for i in range(self.BULK_CREATION_NUMBER)]
         things = app.api.create_things_bulk(names)
         THINGS_TO_DELETE.extend([t['id'] for t in things])
         assert isinstance(things, list)
@@ -56,8 +56,8 @@ class TestThingsApi:
         assert things
         assert set(THINGS_TO_DELETE).issubset(set([t['id'] for t in things]))
 
-    def test_get_thing(self, app, random_thing_name):
-        name = random_thing_name()
+    def test_get_thing(self, app, random_name):
+        name = random_name()
         _id = self.create_thing(name, app)
         assert isinstance(_id, str)
         THINGS_TO_DELETE.append(_id)
@@ -71,12 +71,18 @@ class TestThingsApi:
 class TestChannelsApi:
     BULK_CREATION_NUMBER = 5
 
-    @staticmethod
-    def create_channel(name, app):
-        return app.api.create_channel(name)
+    def test_create_channel(self, app, random_name):
+        name = random_name()
+        channel_id = app.api.create_channel(name)
+        assert isinstance(channel_id, str)
+        assert channel_id != ""
+        channel_dict = app.api.get_channel(channel_id)
+        assert channel_dict["id"] == channel_id
+        assert channel_dict["name"] == name
+        CHANNELS_TO_DELETE.append(channel_id)
 
     def test_delete_all_channels(self, app):
-        channels_names = [str(i) for i in range(10)]
+        channels_names = [str(i) for i in range(self.BULK_CREATION_NUMBER)]
         channels = app.api.create_channels_bulk(channels_names)
         assert len(channels) == len(channels_names)
         app.api.delete_all_channels()
