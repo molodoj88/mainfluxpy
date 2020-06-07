@@ -276,7 +276,7 @@ class ChannelApi(AbstractApi):
         return response.json()
 
     @api_path(PATH)
-    def create_channel(self, name, token=None, url=None):
+    def create_channel(self, name, token=None, url=None) -> str:
         channel_id = self._create_resource(name, token=token, url=url)
         return channel_id
 

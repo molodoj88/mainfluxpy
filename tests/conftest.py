@@ -3,13 +3,19 @@ import pytest
 import uuid
 import httpx
 from .common import THINGS_TO_DELETE, CHANNELS_TO_DELETE
+from .conf import APP_KWARGS
 
+"""
+You should create file named conf.py in same directory where tests run
+and create dictionary APP_KWARGS with following content:
+ 
 APP_KWARGS = {
-    'url': "your_ip_to_mainflux",
+    'url': "ip-to-mainflux",
     'port': "80",
-    'user': "your_user_email",
-    'password': "your_password"
+    'user': "username",
+    'password': "password"
 }
+"""
 
 
 class TestManager:
@@ -40,7 +46,7 @@ def http_client():
 
 
 @pytest.fixture
-def random_thing_name():
+def random_name():
     def make_random_name():
         return str(uuid.uuid4())
     return make_random_name
@@ -59,4 +65,4 @@ def clean_channels():
     yield
     app = TestManager(**APP_KWARGS).app
     for channel in CHANNELS_TO_DELETE:
-        app.api.delete_thing(channel)
+        app.api.delete_channel(channel)
