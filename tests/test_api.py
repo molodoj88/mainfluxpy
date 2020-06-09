@@ -98,3 +98,21 @@ class TestChannelsApi:
         channel_dict = app.api.get_channel(channel_id)
         assert channel_dict["error"] == "non-existent entity"
 
+    def test_disconnect_thing_to_channel(self, app, random_name):
+        channel_name = random_name()
+        thing_name = random_name()
+
+        channel_id = app.api.create_channel(channel_name)
+        CHANNELS_TO_DELETE.append(channel_id)
+
+        thing_id = app.api.create_thing(thing_name)
+        THINGS_TO_DELETE.append(thing_id)
+
+        app.api.connect_thing_to_channel(thing_id, channel_id)
+
+        status_code = app.api.disconnect_thing_from_channel(channel_id, thing_id)
+        assert isinstance(status_code, int)
+        assert status_code == 204
+        channel_things = app.api.get_connected_things(channel_id)
+        for th in channel_things:
+            assert thing_id != th["id"]
