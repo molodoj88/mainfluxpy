@@ -94,6 +94,7 @@ class TestChannelsApi:
         channel_id = app.api.create_channel(name)
         status_code = app.api.delete_channel(channel_id)
         assert isinstance(status_code, int)
+        assert status_code == 204
         channel_dict = app.api.get_channel(channel_id)
         assert channel_dict["error"] == "non-existent entity"
 
