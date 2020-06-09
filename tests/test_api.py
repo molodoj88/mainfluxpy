@@ -4,6 +4,7 @@ Tests for api functions
 import pytest
 from .common import THINGS_TO_DELETE, CHANNELS_TO_DELETE
 import random
+from typing import List
 
 
 class TestApiToken:
@@ -97,4 +98,29 @@ class TestChannelsApi:
         assert status_code == 204
         channel_dict = app.api.get_channel(channel_id)
         assert channel_dict["error"] == "non-existent entity"
+
+    def test_get_connected_things(self, app, random_name):
+        things_number = 3
+
+        channel_name = random_name()
+        channel_id = app.api.create_channel(channel_name)
+        CHANNELS_TO_DELETE.append(channel_id)
+
+        thing_ids = []
+        thing_names = []
+        for i in range(things_number):
+            name = random_name()
+            thing_id = app.api.create_thing(name)
+            app.api.connect_thing_to_channel(thing_id, channel_id)
+            thing_ids.append(thing_id)
+            thing_names.append(name)
+            THINGS_TO_DELETE.append(thing_id)
+
+        things = app.api.get_connected_things(channel_id)
+        assert isinstance(things, List)
+        assert len(things) == things_number
+        for th in things:
+            assert isinstance(th, dict)
+            assert th["id"] in thing_ids
+            assert th["name"] in thing_names
 
