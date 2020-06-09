@@ -88,3 +88,12 @@ class TestChannelsApi:
         app.api.delete_all_channels()
         channels = app.api.get_channels()
         assert channels == []
+
+    def test_delete_channel(self, app, random_name):
+        name = random_name()
+        channel_id = app.api.create_channel(name)
+        status_code = app.api.delete_channel(channel_id)
+        assert isinstance(status_code, int)
+        channel_dict = app.api.get_channel(channel_id)
+        assert channel_dict["error"] == "non-existent entity"
+
