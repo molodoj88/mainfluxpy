@@ -2,7 +2,6 @@ from mainflux.app import MainfluxApp
 import pytest
 import uuid
 import httpx
-from .common import THINGS_TO_DELETE, CHANNELS_TO_DELETE
 from .conf import APP_KWARGS
 
 """
@@ -52,17 +51,15 @@ def random_name():
     return make_random_name
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function', autouse=True)
 def clean_things():
     yield
     app = TestManager(**APP_KWARGS).app
-    for thing in THINGS_TO_DELETE:
-        app.api.delete_thing(thing)
+    app.api.delete_all_things()
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope='function', autouse=True)
 def clean_channels():
     yield
     app = TestManager(**APP_KWARGS).app
-    for channel in CHANNELS_TO_DELETE:
-        app.api.delete_channel(channel)
+    app.api.delete_all_channels()
