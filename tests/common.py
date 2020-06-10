@@ -1,3 +1,0 @@
-THINGS_TO_DELETE = []
-CHANNELS_TO_DELETE = []
-APP = None
