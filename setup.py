@@ -3,7 +3,7 @@ from setuptools import setup
 packages = ['mainflux']
 
 requires = [
-    'httpx==0.11.1',
+    'httpx==0.23.0',
     'hbmqtt==0.9.5'
 ]
 
